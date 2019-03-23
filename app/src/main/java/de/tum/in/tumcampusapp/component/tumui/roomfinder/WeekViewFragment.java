@@ -5,10 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.alamkanak.weekview.MonthLoader;
+import com.alamkanak.weekview.MonthChangeListener;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewDisplayable;
 
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -32,7 +33,7 @@ import de.tum.in.tumcampusapp.utils.Const;
 import de.tum.in.tumcampusapp.utils.Utils;
 
 public class WeekViewFragment extends Fragment
-        implements MonthLoader.MonthChangeListener<WidgetCalendarItem> {
+        implements MonthChangeListener<WidgetCalendarItem> {
 
     private final LongSparseArray<List<WeekViewDisplayable<WidgetCalendarItem>>> loadedEvents = new LongSparseArray<>();
 
@@ -68,13 +69,23 @@ public class WeekViewFragment extends Fragment
         mWeekView.goToHour(8);
     }
 
+    @NotNull
     @Override
-    public List<WeekViewDisplayable<WidgetCalendarItem>> onMonthChange(Calendar startDate, Calendar endDate) {
+    public List<WeekViewDisplayable<WidgetCalendarItem>> onMonthChange(@NotNull Calendar startDate,
+                                                                       @NotNull Calendar endDate) {
         if (!isLoaded(startDate)) {
             loadEventsInBackground(startDate, endDate);
             return new ArrayList<>();
         }
-        return loadedEvents.get(startDate.getTimeInMillis());
+
+        List<WeekViewDisplayable<WidgetCalendarItem>> results =
+                loadedEvents.get(startDate.getTimeInMillis());
+
+        if (results != null) {
+            return results;
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     private boolean isLoaded(Calendar start) {

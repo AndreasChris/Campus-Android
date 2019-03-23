@@ -108,7 +108,7 @@ data class CalendarItem(
         return values
     }
 
-    fun isSameEventButForLocation(other: CalendarItem): Boolean {
+    fun isSameButForLocation(other: CalendarItem): Boolean {
         return title == other.title
                 && dtstart == other.dtstart
                 && dtend == other.dtend

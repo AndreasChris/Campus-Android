@@ -18,10 +18,9 @@ import android.view.View;
 
 import com.alamkanak.weekview.DateTimeInterpreter;
 import com.alamkanak.weekview.EventClickListener;
-import com.alamkanak.weekview.MonthLoader;
+import com.alamkanak.weekview.MonthChangeListener;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewDisplayable;
-import com.alamkanak.weekview.WeekViewEvent;
 import com.google.android.material.button.MaterialButton;
 
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +62,7 @@ import retrofit2.Call;
  * Activity showing the user's calendar. Calendar items (events) are fetched from TUMOnline and displayed as blocks on a timeline.
  */
 public class CalendarActivity extends ActivityForAccessingTumOnline<EventsResponse>
-        implements OnClickListener, MonthLoader.MonthChangeListener<CalendarItem>,
+        implements OnClickListener, MonthChangeListener<CalendarItem>,
         EventClickListener<CalendarItem>, CalendarDetailsFragment.OnEventInteractionListener {
 
     private static final int REQUEST_SYNC = 0;
@@ -210,10 +209,7 @@ public class CalendarActivity extends ActivityForAccessingTumOnline<EventsRespon
         menuItemSwitchView = menu.findItem(R.id.action_switch_view_mode);
         menuItemFilterCanceled = menu.findItem(R.id.action_calendar_filter_canceled);
 
-        // Refresh the icon according to us having day or week view
         refreshWeekView();
-
-        // Initiate checkboxes for filter in top menu
         initFilterCheckboxes();
 
         return true;
@@ -406,45 +402,14 @@ public class CalendarActivity extends ActivityForAccessingTumOnline<EventsRespon
                .show();
     }
 
+    @NotNull
     @Override
-    public List<WeekViewDisplayable<CalendarItem>> onMonthChange(Calendar startDate, Calendar endDate) {
-        // Populate the week view with the events of the month to display
+    public List<WeekViewDisplayable<CalendarItem>> onMonthChange(@NotNull Calendar startDate,
+                                                                 @NotNull Calendar endDate) {
         DateTime begin = new DateTime(startDate);
         DateTime end = new DateTime(endDate);
-        return prepareCalendarItems(begin, end);
-    }
-
-    private List<WeekViewDisplayable<CalendarItem>> prepareCalendarItems(DateTime begin, DateTime end) {
-        boolean showCancelledEvents = Utils.getSettingBool(this, Const.CALENDAR_FILTER_CANCELED, true);
-        List<CalendarItem> calendarItems = showCancelledEvents
-                ? calendarController.getFromDbBetweenDates(begin, end)
-                : calendarController.getFromDbNotCancelledBetweenDates(begin, end);
-        return mergeSimilarCalendarItems(calendarItems);
-    }
-
-    /**
-     * Creates one event out of multiple instances of the same event that have different locations.
-     * List must already be sorted so that event duplicates are right after each other.
-     */
-    private List<WeekViewDisplayable<CalendarItem>> mergeSimilarCalendarItems(List<CalendarItem> calendarItems) {
-        List<WeekViewDisplayable<CalendarItem>> events = new ArrayList<>();
-        for (int i = 0; i < calendarItems.size(); i++) {
-            CalendarItem calendarItem = calendarItems.get(i);
-            StringBuilder location = new StringBuilder();
-            location.append(calendarItem.getLocation());
-            while (i + 1 < calendarItems.size()
-                    && calendarItem.isSameEventButForLocation(calendarItems.get(i + 1))) {
-                i++;
-                location.append(" + ");
-                location.append(calendarItems.get(i).getLocation());
-            }
-
-            calendarItem.setLocation(location.toString());
-
-            WeekViewEvent<CalendarItem> weekViewEvent = calendarItem.toWeekViewEvent();
-            events.add(weekViewEvent);
-        }
-        return events;
+        List<CalendarItem> calendarItems = calendarController.getCalendarItemsInRange(begin, end);
+        return new ArrayList<>(calendarItems);
     }
 
     /**
@@ -455,8 +420,9 @@ public class CalendarActivity extends ActivityForAccessingTumOnline<EventsRespon
      */
     private void setupDateTimeInterpreter(final boolean shortDate) {
         mWeekView.setDateTimeInterpreter(new DateTimeInterpreter() {
+            @NotNull
             @Override
-            public String interpretDate(Calendar date) {
+            public String interpretDate(@NotNull Calendar date) {
                 final String weekDayFormat;
                 if (shortDate) { // 3 characters
                     weekDayFormat = "E";
@@ -473,10 +439,11 @@ public class CalendarActivity extends ActivityForAccessingTumOnline<EventsRespon
                 return weekDay.toUpperCase(Locale.getDefault()) + ' ' + dateString;
             }
 
+            @NotNull
             @Override
             public String interpretTime(int hour) {
-                DateTimeFormatter hourFormat = DateTimeFormat.forPattern("HH:mm")
-                                                             .withLocale(Locale.getDefault());
+                DateTimeFormatter hourFormat =
+                        DateTimeFormat.forPattern("HH:mm").withLocale(Locale.getDefault());
                 DateTime time = new DateTime().withTime(hour, 0, 0, 0);
                 return hourFormat.print(time);
             }
@@ -512,7 +479,7 @@ public class CalendarActivity extends ActivityForAccessingTumOnline<EventsRespon
     }
 
     @Override
-    public void onEventClick(CalendarItem data, RectF eventRect) {
+    public void onEventClick(CalendarItem data, @NotNull RectF eventRect) {
         // Don't call openEvent if the activity is paused.
         if (isPaused) {
             return;

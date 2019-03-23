@@ -160,7 +160,6 @@ class EventDetailsFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
     }
 
     private fun addToExternalCalendar() {
-        val event = event ?: return
         val endTime = event.endTime ?: event.startTime.plus(Event.defaultDuration.toLong())
         val eventEnd = DateTimeUtils.getDateTimeString(endTime)
 

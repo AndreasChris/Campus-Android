@@ -37,6 +37,8 @@ import de.tum.in.tumcampusapp.utils.Const;
 import de.tum.in.tumcampusapp.utils.Utils;
 import de.tum.in.tumcampusapp.utils.sync.SyncManager;
 
+import static de.tum.in.tumcampusapp.utils.Utils.getSettingBool;
+
 /**
  * Calendar Manager, handles database stuff, external imports.
  */
@@ -110,12 +112,53 @@ public class CalendarController implements ProvidesCard, ProvidesNotifications {
         }
     }
 
-    List<CalendarItem> getFromDbBetweenDates(DateTime begin, DateTime end) {
+    List<CalendarItem> getCalendarItemsInRange(DateTime startDate, DateTime endDate) {
+        DateTime begin = new DateTime(startDate);
+        DateTime end = new DateTime(endDate);
+
+        final boolean showCanceled = getSettingBool(mContext, Const.CALENDAR_FILTER_CANCELED, true);
+        List<CalendarItem> calendarItems;
+        if (showCanceled) {
+            calendarItems = getFromDbBetweenDates(begin, end);
+        } else {
+            calendarItems = getFromDbNotCancelledBetweenDates(begin, end);
+        }
+
+        return mergeMultiLocationCalendarItems(calendarItems);
+    }
+
+    private List<CalendarItem> getFromDbBetweenDates(DateTime begin, DateTime end) {
         return applyEventColors(calendarDao.getAllBetweenDates(begin, end));
     }
 
-    List<CalendarItem> getFromDbNotCancelledBetweenDates(DateTime begin, DateTime end) {
+    private List<CalendarItem> getFromDbNotCancelledBetweenDates(DateTime begin, DateTime end) {
         return applyEventColors(calendarDao.getAllNotCancelledBetweenDates(begin, end));
+    }
+
+    /**
+     * Creates one event out of multiple instances of the same event that have different locations.
+     * List must already be sorted so that event duplicates are right after each other.
+     */
+    private List<CalendarItem> mergeMultiLocationCalendarItems(List<CalendarItem> items) {
+        final List<CalendarItem> results = new ArrayList<>();
+        final int size = items.size();
+
+        for (int i = 0; i < size; i++) {
+            CalendarItem current = items.get(i);
+            StringBuilder location = new StringBuilder(current.getLocation());
+
+            while (i + 1 < size && current.isSameButForLocation(items.get(i + 1))) {
+                i++;
+                location.append(" + ");
+                location.append(items.get(i).getLocation());
+            }
+
+            current.setLocation(location.toString());
+
+            results.add(current);
+        }
+
+        return results;
     }
 
     private List<CalendarItem> applyEventColors(List<CalendarItem> calendarItems) {
@@ -317,7 +360,7 @@ public class CalendarController implements ProvidesCard, ProvidesNotifications {
 
     @Override
     public boolean hasNotificationsEnabled() {
-        return Utils.getSettingBool(mContext, "card_next_phone", false);
+        return getSettingBool(mContext, "card_next_phone", false);
     }
 
 }
