@@ -16,6 +16,7 @@ import de.tum.in.tumcampusapp.api.tumonline.exception.InactiveTokenException;
 import de.tum.in.tumcampusapp.component.other.generic.activity.ProgressActivity;
 import de.tum.in.tumcampusapp.component.tumui.person.model.Identity;
 import de.tum.in.tumcampusapp.component.tumui.person.model.IdentitySet;
+import de.tum.in.tumcampusapp.component.tumui.person.model.ObfuscatedIds;
 import de.tum.in.tumcampusapp.utils.Const;
 import de.tum.in.tumcampusapp.utils.Utils;
 import retrofit2.Call;
@@ -88,19 +89,24 @@ public class WizNavCheckTokenActivity extends ProgressActivity<Void> {
         Identity identity = identitySet.getIds().get(0);
         getAppConfig().setChatRoomDisplayName(identity.getFullName());
 
-        // Save the TUMonline ID to preferences
-        getAppConfig().setTumOnlinePersonId(identity.getObfuscated_ids().getStudierende()); // Switch to identity.getObfuscated_id() in the future
-        getAppConfig().setTumOnlineStudentId(identity.getObfuscated_ids().getStudierende());
-        getAppConfig().setTumOnlineExternalId(identity.getObfuscated_ids().getExtern());
-        getAppConfig().setTumOnlineEmployeeId(identity.getObfuscated_ids().getBedienstete());
+        ObfuscatedIds ids = identity.getObfuscated_ids();
 
-        if (!identity.getObfuscated_ids().getBedienstete().isEmpty()
-                && identity.getObfuscated_ids().getStudierende().isEmpty()
-                && identity.getObfuscated_ids().getExtern().isEmpty()) {
+        // Save the TUMonline ID to preferences
+        getAppConfig().setTumOnlinePersonId(ids.getStudierende());
+        getAppConfig().setTumOnlineStudentId(ids.getStudierende());
+        getAppConfig().setTumOnlineExternalId(ids.getExtern());
+        getAppConfig().setTumOnlineEmployeeId(ids.getBedienstete());
+
+        if (!ids.getBedienstete().isEmpty()
+                && ids.getStudierende().isEmpty()
+                && ids.getExtern().isEmpty()) {
             getAppConfig().setEmployeeMode(true);
+            // only preset cafeteria prices if the user is only an employee
+            // since we can't determine which id is active (given once and never removed)
+            getAppConfig().setRole(Const.ROLE_EMPLOYEE);
         }
 
-        // can't upload the obfuscated ids here since we might not have a (chat) member yet
+        // Note: we can't upload the obfuscated ids here since we might not have a (chat) member yet
 
         startActivity(new Intent(this, WizNavExtrasActivity.class));
         overridePendingTransition(R.anim.fadein, R.anim.fadeout);
