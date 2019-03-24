@@ -135,8 +135,8 @@ class AppConfig @Inject constructor(
         set(value) = sharedPrefs.edit { putBoolean(CardManager.SHOW_SUPPORT, value) }
 
     var savedAppVersion: Int
-        get() = sharedPrefs.getInt(Const.SAVED_APP_VERSION, BuildConfig.VERSION_CODE)
-        set(value) = sharedPrefs.edit { putInt(Const.SAVED_APP_VERSION, value) }
+        get() = sharedPrefs.getString(Const.SAVED_APP_VERSION, BuildConfig.VERSION_CODE.toString()).toInt()
+        set(value) = sharedPrefs.edit { putString(Const.SAVED_APP_VERSION, value.toString()) }
 
     var rainbowMode: Boolean
         get() = sharedPrefs.getBoolean(Const.RAINBOW_MODE, false)
