@@ -10,6 +10,7 @@ object Const {
     const val CAFETERIA_ID = "cafeteriasId"
     const val CAFETERIA_DATE = "cafeteriaDate"
     const val CAFETERIAS = "cafeterias"
+    const val CAFETERIA_BY_LOCATION_SETTINGS_ID = "-1"
     const val CALENDAR_WEEK_MODE = "calender_week_mode"
     const val EVENT_BOOKED_MODE = "event_booked_mode"
     const val DATABASE_NAME = "tca.db"
@@ -167,4 +168,7 @@ object Const {
     const val ROLE_STUDENT = "0"
     const val ROLE_EMPLOYEE = "1"
     const val ROLE_GUEST = "2"
+
+    const val CAFETERIA_CARDS_SETTING = "cafeteria_cards_selection"
+    const val NO_CAFETERIA_FOUND = -1
 }

@@ -2,6 +2,7 @@ package de.tum.`in`.tumcampusapp.di
 
 import dagger.Component
 import de.tum.`in`.tumcampusapp.component.tumui.calendar.di.CalendarComponent
+import de.tum.`in`.tumcampusapp.component.tumui.feedback.di.FeedbackComponent
 import de.tum.`in`.tumcampusapp.component.ui.cafeteria.di.CafeteriaComponent
 import de.tum.`in`.tumcampusapp.component.ui.news.di.NewsComponent
 import de.tum.`in`.tumcampusapp.component.ui.overview.MainActivity
@@ -25,6 +26,8 @@ interface AppComponent {
     fun downloadComponent(): DownloadComponent.Builder
 
     fun eventsComponent(): EventsComponent.Builder
+
+    fun feedbackComponent(): FeedbackComponent.Builder
 
     fun kinoComponent(): KinoComponent.Builder
 

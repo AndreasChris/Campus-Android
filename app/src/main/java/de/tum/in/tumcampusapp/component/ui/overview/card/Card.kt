@@ -110,7 +110,7 @@ abstract class Card(
      * Sets preferences so that this card does not show up again until
      * reactivated manually by the user
      */
-    fun hideAlways() {
+    open fun hideAlways() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val e = prefs.edit()
         e.putBoolean(settingsPrefix + "_start", false)
