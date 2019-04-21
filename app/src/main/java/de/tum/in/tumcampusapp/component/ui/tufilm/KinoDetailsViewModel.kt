@@ -9,7 +9,6 @@ import de.tum.`in`.tumcampusapp.component.ui.ticket.repository.EventsRemoteRepos
 import de.tum.`in`.tumcampusapp.component.ui.ticket.repository.TicketsLocalRepository
 import de.tum.`in`.tumcampusapp.component.ui.tufilm.model.Kino
 import de.tum.`in`.tumcampusapp.component.ui.tufilm.repository.KinoLocalRepository
-import de.tum.`in`.tumcampusapp.utils.Utils
 import de.tum.`in`.tumcampusapp.utils.plusAssign
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -24,8 +23,8 @@ class KinoDetailsViewModel @Inject constructor(
     private val compositeDisposable = CompositeDisposable()
 
     private lateinit var eventDetailsViewModel : EventDetailsViewModel
-    /*private*/ lateinit var ticketCount: LiveData<Int?>
-    //fun getTicketCount(): LiveData<Int?> {return ticketCount}
+    private lateinit var ticketCount: LiveData<Int?>
+    fun getTicketCount(): LiveData<Int?> {return ticketCount}
 
     private val _kino = MutableLiveData<Kino>()
     val kino: LiveData<Kino> = _kino
