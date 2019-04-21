@@ -3,8 +3,10 @@ package de.tum.`in`.tumcampusapp.component.ui.tufilm
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import de.tum.`in`.tumcampusapp.component.ui.ticket.fragment.EventDetailsViewModel
 import de.tum.`in`.tumcampusapp.component.ui.ticket.model.Event
 import de.tum.`in`.tumcampusapp.component.ui.ticket.repository.EventsRemoteRepository
+import de.tum.`in`.tumcampusapp.component.ui.ticket.repository.TicketsLocalRepository
 import de.tum.`in`.tumcampusapp.component.ui.tufilm.model.Kino
 import de.tum.`in`.tumcampusapp.component.ui.tufilm.repository.KinoLocalRepository
 import de.tum.`in`.tumcampusapp.utils.Utils
@@ -12,13 +14,18 @@ import de.tum.`in`.tumcampusapp.utils.plusAssign
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
+import kotlin.IllegalStateException
 
 class KinoDetailsViewModel @Inject constructor(
-        private val localRepository: KinoLocalRepository,
+        private val kinoLocalRepository: KinoLocalRepository,
         private val eventsRemoteRepository: EventsRemoteRepository
 ) : ViewModel() {
 
     private val compositeDisposable = CompositeDisposable()
+
+    private lateinit var eventDetailsViewModel : EventDetailsViewModel
+    /*private*/ lateinit var ticketCount: LiveData<Int?>
+    //fun getTicketCount(): LiveData<Int?> {return ticketCount}
 
     private val _kino = MutableLiveData<Kino>()
     val kino: LiveData<Kino> = _kino
@@ -26,26 +33,34 @@ class KinoDetailsViewModel @Inject constructor(
     private val _event= MutableLiveData<Event>()
     val event: LiveData<Event> = _event
 
-    private val _ticketCount = MutableLiveData<Int?>()
-    val ticketCount: LiveData<Int?> = _ticketCount
+    fun initEvent(eventId: Int, ticketsLocalRepository: TicketsLocalRepository) {
+        this.eventDetailsViewModel = EventDetailsViewModel(eventId, eventsRemoteRepository, ticketsLocalRepository)
+        this.ticketCount = eventDetailsViewModel.ticketCount
+    }
 
     fun fetchTicketCount(eventId: Int) {
-        compositeDisposable += eventsRemoteRepository.fetchTicketStats(eventId)
-                .subscribeOn(Schedulers.io())
-                .doOnError(Utils::log)
-                .subscribe(_ticketCount::postValue) {
-                    _ticketCount.postValue(null)
-                }
+        if(eventDetailsViewModel == null) throw IllegalStateException("eventDetailsViewModel not initialised. Call initEvent(...) first.")
+        return eventDetailsViewModel.fetchTicketCount()
+    }
+
+    fun isEventBooked(event: Event): Boolean {
+        if(eventDetailsViewModel == null) throw IllegalStateException("eventDetailsViewModel not initialised. Call initEvent(...) first.")
+        return eventDetailsViewModel.isEventBooked(event)
+    }
+
+    fun getBookedTicketCount(event: Event): Int {
+        if(eventDetailsViewModel == null) throw IllegalStateException("eventDetailsViewModel not initialised. Call initEvent(...) first.")
+        return eventDetailsViewModel.getBookedTicketCount(event)
     }
 
     fun fetchKinoByPosition(position: Int) {
-        compositeDisposable += localRepository.getKinoByPosition(position)
+        compositeDisposable += kinoLocalRepository.getKinoByPosition(position)
                 .subscribeOn(Schedulers.io())
                 .subscribe(_kino::postValue)
     }
 
     fun fetchEventByMovieId(movieId: String) {
-        compositeDisposable += localRepository.getEventByMovieId(movieId)
+        compositeDisposable += kinoLocalRepository.getEventByMovieId(movieId)
                 .subscribeOn(Schedulers.io())
                 .subscribe(_event::postValue)
     }

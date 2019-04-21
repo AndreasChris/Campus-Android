@@ -56,9 +56,9 @@ public class KinoDetailsFragment extends Fragment {
     Provider<KinoDetailsViewModel> viewModelProvider;
 
     @Inject
-    TicketsLocalRepository ticketsLocalRepo;
+    TicketsLocalRepository ticketsLocalRepository;
 
-    private KinoDetailsViewModel kinoViewModel;
+    private KinoDetailsViewModel kinoDetailsViewModel;
 
     public static KinoDetailsFragment newInstance(int position) {
         KinoDetailsFragment fragment = new KinoDetailsFragment();
@@ -72,17 +72,16 @@ public class KinoDetailsFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         ((BaseActivity) requireActivity()).getInjector()
-                .kinoComponent()
-                .kinoModule(new KinoModule())
-                .build()
-                .inject(this);
+                                          .kinoComponent()
+                                          .kinoModule(new KinoModule())
+                                          .build()
+                                          .inject(this);
 
         ViewModelFactory<KinoDetailsViewModel> factory = new ViewModelFactory<>(viewModelProvider);
-        kinoViewModel = ViewModelProviders.of(this, factory).get(KinoDetailsViewModel.class);
+        kinoDetailsViewModel = ViewModelProviders.of(this, factory).get(KinoDetailsViewModel.class);
 
-        kinoViewModel.getKino().observe(this, this::showMovieDetails);
-        kinoViewModel.getEvent().observe(this, this::showEventTicketDetails);
-        kinoViewModel.getTicketCount().observe(this, this::showTicketCount);
+        kinoDetailsViewModel.getKino().observe(this, this::showMovieDetails);
+        kinoDetailsViewModel.getEvent().observe(this, this::showEventTicketDetails);
     }
 
     @Override
@@ -104,22 +103,27 @@ public class KinoDetailsFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         final int position = getArguments().getInt(Const.POSITION);
-        kinoViewModel.fetchKinoByPosition(position);
+        kinoDetailsViewModel.fetchKinoByPosition(position);
     }
 
     private void showEventTicketDetails(Event event) {
-        this.event = event;
         initBuyOrShowTicket(event);
 
         rootView.findViewById(R.id.eventInformation).setVisibility(View.VISIBLE);
         ((TextView) rootView.findViewById(R.id.locationTextView)).setText(event.getLocality());
 
-        kinoViewModel.fetchTicketCount(event.getId());
+        kinoDetailsViewModel.fetchTicketCount(event.getId());
     }
 
     private void initBuyOrShowTicket(Event event) {
+        if(!event.equals(this.event)) {
+            this.event = event;
+            kinoDetailsViewModel.initEvent(event.getId(), ticketsLocalRepository);
+            kinoDetailsViewModel.getTicketCount().observe(this, this::showTicketCount);
+        }
+
         MaterialButton ticketButton = rootView.findViewById(R.id.buyTicketButton);
-        int ticketBoughtCount = ticketsLocalRepo.getTicketCount(event);
+        int ticketBoughtCount = kinoDetailsViewModel.getBookedTicketCount(event);
 
         if (ticketBoughtCount > 0) {
             ticketButton.setText(getResources().getQuantityString(R.plurals.show_tickets, ticketBoughtCount));
@@ -139,7 +143,7 @@ public class KinoDetailsFragment extends Fragment {
         TextView remainingTicketsTextView = rootView.findViewById(R.id.remainingTicketsTextView);
         TextView remainingTicketsHeaderView = rootView.findViewById(R.id.remainingTicketsHeaderTextView);
         MaterialButton ticketButton = rootView.findViewById(R.id.buyTicketButton);
-        int ticketBoughtCount = ticketsLocalRepo.getTicketCount(event);
+        int ticketBoughtCount = kinoDetailsViewModel.getBookedTicketCount(event);
 
         if(EventHelper.Companion.isEventImminent(event)) {
             ticketButton.setVisibility((ticketBoughtCount <= 0) ? View.GONE : View.VISIBLE);
@@ -165,7 +169,7 @@ public class KinoDetailsFragment extends Fragment {
     }
 
     private void showMovieDetails(Kino kino) {
-        kinoViewModel.fetchEventByMovieId(kino.getId());
+        kinoDetailsViewModel.fetchEventByMovieId(kino.getId());
 
         loadPoster(kino);
 
@@ -217,24 +221,24 @@ public class KinoDetailsFragment extends Fragment {
         ProgressBar progressBar = rootView.findViewById(R.id.kino_cover_progress);
 
         Picasso.get()
-                .load(kino.getCover())
-                .into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        placeholder.setVisibility(View.GONE);
-                        posterView.setImageBitmap(bitmap);
-                    }
+               .load(kino.getCover())
+               .into(new Target() {
+                   @Override
+                   public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                       placeholder.setVisibility(View.GONE);
+                       posterView.setImageBitmap(bitmap);
+                   }
 
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                   @Override
+                   public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                       progressBar.setVisibility(View.GONE);
+                   }
 
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-                        // Free ad space
-                    }
-                });
+                   @Override
+                   public void onPrepareLoad(Drawable placeHolderDrawable) {
+                       // Free ad space
+                   }
+               });
     }
 
     private void setCompoundDrawablesTint(TextView textView, int color) {
